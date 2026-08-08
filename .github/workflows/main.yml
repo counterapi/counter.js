@@ -74,7 +74,9 @@ jobs:
       run: npm ci
       
     - name: Run security audit
-      run: npm audit --audit-level moderate
+      # Scoped to production dependencies: dist/ is prebuilt before publish, so
+      # devDependency vulnerabilities (build/release tooling) never reach consumers.
+      run: npm audit --omit=dev --audit-level moderate
   
   integration-test:
     name: Integration Tests

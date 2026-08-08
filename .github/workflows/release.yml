@@ -1,21 +1,9 @@
 name: Release & Publish
 
 on:
-  workflow_dispatch:
-    inputs:
-      version_type:
-        description: 'Version bump type'
-        required: true
-        default: 'patch'
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-      release_notes:
-        description: 'Release notes (optional)'
-        required: false
-        type: string
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
 
 jobs:
   release:
@@ -23,56 +11,38 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
         token: ${{ secrets.GITHUB_TOKEN }}
-        
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '22.x'
         cache: 'npm'
         registry-url: 'https://registry.npmjs.org'
-        
+
     - name: Install dependencies
       run: npm ci
-      
-    - name: Configure Git
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        
-    - name: Bump version
-      id: version
-      run: |
-        # Get current version
-        CURRENT_VERSION=$(node -p "require('./package.json').version")
-        echo "Current version: $CURRENT_VERSION"
-        
-        # Bump version
-        NEW_VERSION=$(npm version ${{ github.event.inputs.version_type }} --no-git-tag-version)
-        echo "New version: $NEW_VERSION"
-        
-        # Remove 'v' prefix for output
-        VERSION_NUMBER=${NEW_VERSION#v}
-        echo "version=$VERSION_NUMBER" >> $GITHUB_OUTPUT
-        echo "tag=$NEW_VERSION" >> $GITHUB_OUTPUT
-      
+
     - name: Run tests
       run: npm test
-      
+
     - name: Run linter
       run: npm run lint
-      
+
     - name: Run type checking
       run: npm run typecheck
-      
+
     - name: Build project
       run: npm run build
-      
+
     - name: Verify build output
       run: |
         test -f dist/counter.js
@@ -80,69 +50,9 @@ jobs:
         test -f dist/counter.browser.js
         test -f dist/counter.browser.min.js
         test -d dist/types
-        
-    - name: Commit version bump
-      run: |
-        git add package.json package-lock.json
-        git commit -m "chore: bump version to ${{ steps.version.outputs.tag }}"
-        
-    - name: Pull latest changes and push
-      run: |
-        # Pull latest changes from remote to avoid conflicts
-        git pull origin main --rebase
-        
-        # Create tag
-        git tag ${{ steps.version.outputs.tag }}
-        
-        # Push changes and tag
-        git push origin main
-        git push origin ${{ steps.version.outputs.tag }}
-        
-    - name: Generate changelog
-      id: changelog
-      run: |
-        # Get commits since last tag
-        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-        
-        # Create changelog content
-        if [ -n "$LAST_TAG" ]; then
-          CHANGELOG="## Changes since $LAST_TAG"$'\n'
-          CHANGELOG+=$(git log --pretty=format:"- %s (%h)" $LAST_TAG..HEAD)
-        else
-          CHANGELOG="## Initial Release"$'\n'
-          CHANGELOG+="- First release of counterapi"
-        fi
-        
-        # Add custom release notes if provided
-        if [ -n "${{ github.event.inputs.release_notes }}" ]; then
-          CHANGELOG+=$'\n\n'"## Release Notes"$'\n'
-          CHANGELOG+="${{ github.event.inputs.release_notes }}"
-        fi
-        
-        # Use printf to handle special characters and write to output
-        {
-          echo "changelog<<CHANGELOG_EOF"
-          printf "%s\n" "$CHANGELOG"
-          echo "CHANGELOG_EOF"
-        } >> $GITHUB_OUTPUT
-        
-    - name: Publish to NPM
-      run: npm publish --access public
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        
-    - name: Create package tarball
-      run: npm pack
-        
-    - name: Create GitHub Release
-      id: create_release
-      uses: softprops/action-gh-release@v2
+
+    - name: Release
+      run: npx semantic-release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.version.outputs.tag }}
-        name: Release ${{ steps.version.outputs.tag }}
-        body: ${{ steps.changelog.outputs.changelog }}
-        draft: false
-        prerelease: false
-        files: ./counterapi-${{ steps.version.outputs.version }}.tgz 
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
