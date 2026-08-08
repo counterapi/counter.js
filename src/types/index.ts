@@ -2,49 +2,81 @@
  * Configuration options for the Counter client
  */
 export interface CounterConfig {
-  /** API version to use (v1 or v2, defaults to 'v2' if not specified) */
-  version?: 'v1' | 'v2';
-  /** The namespace identifier (used for v1 API) */
-  namespace?: string;
-  /** The workspace identifier (used for v2 API, preferred over namespace for v2) */
+  /** The workspace identifier */
   workspace?: string;
   /** Request timeout in milliseconds (optional, defaults to 10000) */
   timeout?: number;
   /** Enable debug logging (optional, defaults to false) */
   debug?: boolean;
-  /** Authentication token for API requests (v2 only) */
+  /** Authentication token for API requests */
   accessToken?: string;
+}
+
+/**
+ * Counter data payload returned by get/up/down/reset
+ */
+export interface CounterData {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  team_id: number;
+  user_id: number;
+  workspace_id: number;
+  workspace_slug: string;
+  /** Omitted from the reset response */
+  up_count?: number;
+  /** Omitted from the reset response */
+  down_count?: number;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
  * Counter response structure
  */
 export interface CounterResponse {
-  /** The current count value */
-  value: number;
-  /** The name of the counter */
-  name: string;
-  /** The namespace (v1) or workspace (v2) of the counter */
-  namespace: string;
-  /** Creation timestamp */
-  created: string;
-  /** Last updated timestamp */
-  updated: string;
+  code: string;
+  message?: string;
+  data: CounterData;
 }
 
 /**
- * Counter stats response structure (v2 only)
+ * Up/down counts for a period of time
  */
-export interface CounterStatsResponse extends CounterResponse {
-  /** Stats about the counter usage */
+export interface CounterPeriodStats {
+  up: number;
+  down: number;
+}
+
+/**
+ * Counter stats data payload
+ */
+export interface CounterStatsData {
+  id: number;
+  counter_id: number;
+  up_count: number;
+  down_count: number;
   stats: {
-    /** Total number of hits */
-    hits: number;
-    /** Usage by date */
-    dates: {
-      [date: string]: number;
+    today: CounterPeriodStats;
+    this_week: CounterPeriodStats;
+    temporal: {
+      hours: Record<string, CounterPeriodStats>;
+      weekdays: Record<string, CounterPeriodStats>;
+      quarters: Record<string, CounterPeriodStats>;
     };
   };
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Counter stats response structure
+ */
+export interface CounterStatsResponse {
+  code: string;
+  message?: string;
+  data: CounterStatsData;
 }
 
 /**
@@ -60,24 +92,13 @@ export interface HttpClient {
  * API configuration structure
  */
 export interface ApiConfig {
-  v1: {
-    baseUrl: string;
-    endpoints: {
-      up: string;
-      down: string;
-      get: string;
-      set: string;
-    };
-  };
-  v2: {
-    baseUrl: string;
-    endpoints: {
-      up: string;
-      down: string;
-      get: string;
-      reset: string;
-      stats: string;
-    };
+  baseUrl: string;
+  endpoints: {
+    up: string;
+    down: string;
+    get: string;
+    reset: string;
+    stats: string;
   };
 }
 

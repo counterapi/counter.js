@@ -9,7 +9,7 @@ This repository uses two GitHub Actions workflows for different purposes:
 **Purpose**: Continuous Integration testing
 
 **Jobs**:
-- **Test**: Runs tests on Node.js 16.x, 18.x, and 20.x
+- **Test**: Runs tests on Node.js 20.x and 22.x
 - **Security**: Runs security audit
 
 **What it does**:

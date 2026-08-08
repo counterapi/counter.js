@@ -2,10 +2,12 @@
 
 A lightweight, universal JavaScript client for [CounterAPI](https://counterapi.dev) - a simple API for tracking and managing counters.
 
+> **v3 breaking change:** The CounterAPI v1 API has been retired, and this library now only talks to v2. The `version` and `namespace` config options are gone — configure a `workspace` instead (see [Creating a Client](#creating-a-client)). The TypeScript response types (`CounterResponse`, `CounterStatsResponse`) were also corrected to match what the API actually returns (`{ code, data: {...} }`) — see [Response Types](#response-types).
+
 ## Features
 
 - Universal JavaScript library (Node.js, browser, ESM)
-- Support for both v1 and v2 CounterAPI endpoints
+- Supports the CounterAPI v2 endpoints
 - Promise-based API
 - TypeScript support
 - Custom error handling
@@ -46,16 +48,7 @@ const { Counter } = require('counterapi');
 ### Creating a Client
 
 ```js
-// For v1 API
-const counterV1 = new Counter({
-  version: 'v1',       // Use v1 API
-  namespace: 'my-app', // Your namespace
-  debug: false,        // Optional: Enable debug logging
-  timeout: 5000,       // Optional: Request timeout in ms (default: 10000)
-});
-
-// For v2 API (default)
-const counterV2 = new Counter({
+const counter = new Counter({
   workspace: 'my-workspace', // Your workspace name
   debug: false,              // Optional: Enable debug logging
   timeout: 5000,             // Optional: Request timeout in ms (default: 10000)
@@ -70,7 +63,7 @@ const counterV2 = new Counter({
 ```js
 // Get the current value of a counter
 const counter = await counterClient.get('page-views');
-console.log(`Current count: ${counter.value}`);
+console.log(`Up count: ${counter.data.up_count}, Down count: ${counter.data.down_count}`);
 ```
 
 #### Increment Counter
@@ -78,7 +71,6 @@ console.log(`Current count: ${counter.value}`);
 ```js
 // Increment a counter by 1
 const counter = await counterClient.up('page-views');
-console.log(`New count after increment: ${counter.value}`);
 console.log(`Up count: ${counter.data.up_count}, Down count: ${counter.data.down_count}`);
 ```
 
@@ -87,31 +79,22 @@ console.log(`Up count: ${counter.data.up_count}, Down count: ${counter.data.down
 ```js
 // Decrement a counter by 1
 const counter = await counterClient.down('page-views');
-console.log(`New count after decrement: ${counter.value}`);
 console.log(`Up count: ${counter.data.up_count}, Down count: ${counter.data.down_count}`);
 ```
 
-#### Set Counter Value (V1 API only)
-
-```js
-// Set a counter to a specific value
-const counter = await counterV1.set('page-views', 100);
-console.log(`Counter set to: ${counter.value}`);
-```
-
-#### Reset Counter (V2 API only)
+#### Reset Counter
 
 ```js
 // Reset a counter to 0
-const counter = await counterV2.reset('page-views');
-console.log(`Counter reset to: ${counter.value}`);
+const counter = await counterClient.reset('page-views');
+console.log(counter.message); // "Counter reset successfully"
 ```
 
-#### Get Counter Stats (V2 API only)
+#### Get Counter Stats
 
 ```js
 // Get statistics for a counter
-const result = await counterV2.stats('page-views');
+const result = await counterClient.stats('page-views');
 console.log(`Up count: ${result.data.up_count}`);
 console.log(`Down count: ${result.data.down_count}`);
 console.log(`Today's up count: ${result.data.stats.today.up}`);
@@ -145,7 +128,7 @@ Basic counter operations return a response with this structure:
 }
 ```
 
-#### Stats Response (V2 API)
+#### Stats Response
 
 The `stats()` method returns a comprehensive statistics object:
 

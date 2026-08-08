@@ -42,7 +42,7 @@ The example demonstrates:
    - Uses a local build during development
    - Uses the CDN in production
 
-2. Creating a Counter client instance with the default v2 API
+2. Creating a Counter client instance
    - Uses the workspace parameter
 
 3. Making API calls:
