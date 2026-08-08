@@ -13,8 +13,9 @@ const plugins = [
   commonjs(),
   typescript({
     tsconfig: './tsconfig.json',
-    declaration: true,
-    declarationDir: './dist/types'
+    declaration: false,
+    declarationMap: false,
+    outDir: './dist'
   })
 ];
 
@@ -25,7 +26,10 @@ const browserPlugins = [
   }),
   commonjs(),
   typescript({
-    tsconfig: './tsconfig.json'
+    tsconfig: './tsconfig.json',
+    declaration: false,
+    declarationMap: false,
+    outDir: './dist'
   })
 ];
 
