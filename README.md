@@ -4,6 +4,16 @@ A lightweight, universal JavaScript client for [CounterAPI](https://counterapi.d
 
 > **v3 breaking change:** The CounterAPI v1 API has been retired, and this library now only talks to v2. The `version` and `namespace` config options are gone — configure a `workspace` instead (see [Creating a Client](#creating-a-client)). The TypeScript response types (`CounterResponse`, `CounterStatsResponse`) were also corrected to match what the API actually returns (`{ code, data: {...} }`) — see [Response Types](#response-types).
 
+## Getting Started
+
+This library is a client for the CounterAPI service — you need a CounterAPI account and workspace before you can count anything with it:
+
+1. [Sign up for free](https://app.counterapi.dev/register) (no credit card required)
+2. Create a workspace from your dashboard, and grab an access token if you need authenticated/private counters
+3. Install the library and start counting — see [Installation](#installation) below
+
+Full API reference and guides: [docs.counterapi.dev](https://docs.counterapi.dev)
+
 ## Features
 
 - Universal JavaScript library (Node.js, browser, ESM)
@@ -262,6 +272,10 @@ function createHourlyChart(stats) {
 const stats = await counter.stats('my-counter');
 createHourlyChart(stats);
 ```
+
+## Documentation
+
+Full API reference, authentication details, and framework-specific guides live at [docs.counterapi.dev](https://docs.counterapi.dev). Don't have an account yet? [Sign up for free](https://app.counterapi.dev/register).
 
 ## License
 
