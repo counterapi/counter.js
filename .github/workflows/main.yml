@@ -13,7 +13,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [22.x, 24.x]
     
     steps:
     - name: Checkout code
@@ -38,7 +38,7 @@ jobs:
       run: npm run test:coverage
       
     - name: Upload coverage to Codecov
-      if: matrix.node-version == '20.x'
+      if: matrix.node-version == '22.x'
       uses: codecov/codecov-action@v7
       with:
         files: ./coverage/lcov.info
@@ -67,12 +67,12 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v7
       with:
-        node-version: '22.x'
+        node-version: '24.x'
         cache: 'npm'
-        
+
     - name: Install dependencies
       run: npm ci
-      
+
     - name: Run security audit
       # Scoped to production dependencies: dist/ is prebuilt before publish, so
       # devDependency vulnerabilities (build/release tooling) never reach consumers.
@@ -90,7 +90,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v7
       with:
-        node-version: '20.x'
+        node-version: '24.x'
         cache: 'npm'
         
     - name: Install dependencies
