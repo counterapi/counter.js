@@ -1,5 +1,5 @@
 import { Counter } from './index.js';
-import { HttpClient, CounterResponse } from '../types/index.js';
+import { HttpClient, CounterResponse, CounterStatsResponse } from '../types/index.js';
 import axios from 'axios';
 
 // Mock HTTP client for testing
@@ -49,215 +49,175 @@ class MockHttpClient implements HttpClient {
 }
 
 describe('Counter', () => {
-  let v1Client: Counter;
-  let v2Client: Counter;
+  let client: Counter;
   let mockHttp: MockHttpClient;
 
   beforeEach(() => {
     mockHttp = new MockHttpClient();
-    
-    v1Client = new Counter({
-      version: 'v1',
-      namespace: 'test-namespace'
+
+    client = new Counter({
+      workspace: 'test-workspace'
     });
-    
-    v2Client = new Counter({
-      version: 'v2',
-      namespace: 'test-workspace'
-    });
-    
-    // Replace the HTTP clients with our mock using type assertion
+
+    // Replace the HTTP client with our mock using type assertion
     // We need to cast to unknown first to avoid TypeScript errors with private properties
-    (v1Client as unknown as { http: HttpClient }).http = mockHttp;
-    (v2Client as unknown as { http: HttpClient }).http = mockHttp;
+    (client as unknown as { http: HttpClient }).http = mockHttp;
   });
 
   describe('constructor', () => {
-    it('should throw error if namespace is missing for v1', () => {
-      expect(() => new Counter({ version: 'v1', namespace: '' }))
-        .toThrow('Namespace is required for v1 API');
-    });
-    
-    it('should throw error if workspace is missing for v2', () => {
-      expect(() => new Counter({ version: 'v2', workspace: '' }))
-        .toThrow('Workspace is required for v2 API');
+    it('should throw error if workspace is missing', () => {
+      expect(() => new Counter({ workspace: '' }))
+        .toThrow('Workspace is required');
     });
 
-    it('should create v1 client with valid config', () => {
-      const client = new Counter({
-        version: 'v1',
-        namespace: 'test-namespace'
+    it('should create client with valid config', () => {
+      const created = new Counter({
+        workspace: 'test-workspace'
       });
-      expect(client).toBeInstanceOf(Counter);
-    });
-    
-    it('should create v2 client with valid config', () => {
-      const client = new Counter({
-        version: 'v2',
-        namespace: 'test-workspace'
-      });
-      expect(client).toBeInstanceOf(Counter);
+      expect(created).toBeInstanceOf(Counter);
     });
   });
 
-  describe('v1 API', () => {
+  describe('API', () => {
+    // Shape mirrors the live CounterAPI v2 response, verified against
+    // https://api.counterapi.dev/v2/test/test
     const mockResponse: CounterResponse = {
-      value: 42,
-      name: 'test-counter',
-      namespace: 'test-namespace',
-      created: '2023-01-01T00:00:00Z',
-      updated: '2023-01-01T01:00:00Z'
+      code: '200',
+      data: {
+        id: 1,
+        name: 'test-counter',
+        slug: 'test-counter',
+        description: '',
+        team_id: 4,
+        user_id: 7,
+        workspace_id: 1,
+        workspace_slug: 'test-workspace',
+        up_count: 42,
+        down_count: 0,
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T01:00:00Z'
+      }
     };
 
-    beforeEach(() => {
-      // Set up mock responses for the v1 API endpoints
-      const getUrl = '/{namespace}/{name}';
-      const upUrl = '/{namespace}/{name}/up';
-      const downUrl = '/{namespace}/{name}/down';
-      const setUrl = '/{namespace}/{name}/?count={value}';
-      
-      mockHttp.setResponse(`GET:${getUrl.replace('{namespace}', 'test-namespace').replace('{name}', 'test-counter')}`, mockResponse);
-      mockHttp.setResponse(`GET:${upUrl.replace('{namespace}', 'test-namespace').replace('{name}', 'test-counter')}`, { ...mockResponse, value: 43 });
-      mockHttp.setResponse(`GET:${downUrl.replace('{namespace}', 'test-namespace').replace('{name}', 'test-counter')}`, { ...mockResponse, value: 41 });
-      mockHttp.setResponse(`GET:${setUrl.replace('{namespace}', 'test-namespace').replace('{name}', 'test-counter').replace('{value}', '100')}`, { ...mockResponse, value: 100 });
-    });
-
-    it('should get a counter', async () => {
-      const result = await v1Client.get('test-counter');
-      expect(result).toEqual(mockResponse);
-      expect(mockHttp.requests).toHaveLength(1);
-    });
-
-    it('should increment a counter', async () => {
-      const result = await v1Client.up('test-counter');
-      expect(result).toEqual({ ...mockResponse, value: 43 });
-      expect(mockHttp.requests).toHaveLength(1);
-    });
-
-    it('should decrement a counter', async () => {
-      const result = await v1Client.down('test-counter');
-      expect(result).toEqual({ ...mockResponse, value: 41 });
-      expect(mockHttp.requests).toHaveLength(1);
-    });
-
-    it('should set a counter to specific value', async () => {
-      const result = await v1Client.set('test-counter', 100);
-      expect(result).toEqual({ ...mockResponse, value: 100 });
-      expect(mockHttp.requests).toHaveLength(1);
-    });
-
-    it('should throw error for empty counter name', async () => {
-      await expect(v1Client.get('')).rejects.toThrow('Counter name is required');
-    });
-    
-    it('should throw error when using v2 methods on v1 client', async () => {
-      await expect(v1Client.reset('test-counter')).rejects.toThrow('reset method is only available in v2');
-      await expect(v1Client.stats('test-counter')).rejects.toThrow('stats method is only available in v2');
-    });
-  });
-  
-  describe('v2 API', () => {
-    const mockResponse: CounterResponse = {
-      value: 42,
-      name: 'test-counter',
-      namespace: 'test-workspace',
-      created: '2023-01-01T00:00:00Z',
-      updated: '2023-01-01T01:00:00Z'
+    // Reset omits up_count/down_count on the real API
+    const mockResetResponse: CounterResponse = {
+      code: '200',
+      message: 'Counter reset successfully',
+      data: {
+        id: 1,
+        name: 'test-counter',
+        slug: 'test-counter',
+        description: '',
+        team_id: 4,
+        user_id: 7,
+        workspace_id: 1,
+        workspace_slug: 'test-workspace',
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-01T01:00:00Z'
+      }
     };
-    
-    const mockStatsResponse = {
-      ...mockResponse,
-      stats: {
-        hits: 100,
-        dates: {
-          '2023-01-01': 50,
-          '2023-01-02': 50
-        }
+
+    const mockStatsResponse: CounterStatsResponse = {
+      code: '200',
+      message: 'Counter stats retrieved successfully',
+      data: {
+        id: 1,
+        counter_id: 1,
+        up_count: 100,
+        down_count: 20,
+        stats: {
+          today: { up: 5, down: 1 },
+          this_week: { up: 30, down: 4 },
+          temporal: {
+            hours: { '07': { up: 5, down: 1 } },
+            weekdays: { wednesday: { up: 5, down: 1 } },
+            quarters: { q3: { up: 30, down: 4 } }
+          }
+        },
+        created_at: '2023-01-01T00:00:00Z',
+        updated_at: '2023-01-02T00:00:00Z'
       }
     };
 
     beforeEach(() => {
-      // Set up mock responses for the v2 API endpoints
+      // Set up mock responses for the API endpoints
       const getUrl = '/{workspace}/{name}';
       const upUrl = '/{workspace}/{name}/up';
       const downUrl = '/{workspace}/{name}/down';
       const resetUrl = '/{workspace}/{name}/reset';
       const statsUrl = '/{workspace}/{name}/stats';
-      
+
       mockHttp.setResponse(`GET:${getUrl.replace('{workspace}', 'test-workspace').replace('{name}', 'test-counter')}`, mockResponse);
-      mockHttp.setResponse(`GET:${upUrl.replace('{workspace}', 'test-workspace').replace('{name}', 'test-counter')}`, { ...mockResponse, value: 43 });
-      mockHttp.setResponse(`GET:${downUrl.replace('{workspace}', 'test-workspace').replace('{name}', 'test-counter')}`, { ...mockResponse, value: 41 });
-      mockHttp.setResponse(`GET:${resetUrl.replace('{workspace}', 'test-workspace').replace('{name}', 'test-counter')}`, { ...mockResponse, value: 0 });
+      mockHttp.setResponse(`GET:${upUrl.replace('{workspace}', 'test-workspace').replace('{name}', 'test-counter')}`, { ...mockResponse, data: { ...mockResponse.data, up_count: 43 } });
+      mockHttp.setResponse(`GET:${downUrl.replace('{workspace}', 'test-workspace').replace('{name}', 'test-counter')}`, { ...mockResponse, data: { ...mockResponse.data, down_count: 1 } });
+      mockHttp.setResponse(`GET:${resetUrl.replace('{workspace}', 'test-workspace').replace('{name}', 'test-counter')}`, mockResetResponse);
       mockHttp.setResponse(`GET:${statsUrl.replace('{workspace}', 'test-workspace').replace('{name}', 'test-counter')}`, mockStatsResponse);
     });
 
     it('should get a counter', async () => {
-      const result = await v2Client.get('test-counter');
+      const result = await client.get('test-counter');
       expect(result).toEqual(mockResponse);
+      expect(result.data.up_count).toBe(42);
       expect(mockHttp.requests).toHaveLength(1);
     });
 
     it('should increment a counter', async () => {
-      const result = await v2Client.up('test-counter');
-      expect(result).toEqual({ ...mockResponse, value: 43 });
+      const result = await client.up('test-counter');
+      expect(result.data.up_count).toBe(43);
       expect(mockHttp.requests).toHaveLength(1);
     });
 
     it('should decrement a counter', async () => {
-      const result = await v2Client.down('test-counter');
-      expect(result).toEqual({ ...mockResponse, value: 41 });
+      const result = await client.down('test-counter');
+      expect(result.data.down_count).toBe(1);
       expect(mockHttp.requests).toHaveLength(1);
     });
 
     it('should reset a counter', async () => {
-      const result = await v2Client.reset('test-counter');
-      expect(result).toEqual({ ...mockResponse, value: 0 });
+      const result = await client.reset('test-counter');
+      expect(result).toEqual(mockResetResponse);
+      expect(result.data.up_count).toBeUndefined();
       expect(mockHttp.requests).toHaveLength(1);
     });
-    
+
     it('should get counter stats', async () => {
-      const result = await v2Client.stats('test-counter');
+      const result = await client.stats('test-counter');
       expect(result).toEqual(mockStatsResponse);
+      expect(result.data.stats.today.up).toBe(5);
       expect(mockHttp.requests).toHaveLength(1);
     });
 
     it('should throw error for empty counter name', async () => {
-      await expect(v2Client.get('')).rejects.toThrow('Counter name is required');
-    });
-    
-    it('should throw error when using v1 methods on v2 client', async () => {
-      await expect(v2Client.set('test-counter', 100)).rejects.toThrow('set method is only available in v1');
+      await expect(client.get('')).rejects.toThrow('Counter name is required');
     });
   });
-  
+
   describe('accessToken', () => {
     it('should pass accessToken to the HTTP client and set Authorization header', () => {
       // Create a client with an access token
-      const client = new Counter({
-        version: 'v2',
+      const clientWithToken = new Counter({
         workspace: 'test-workspace',
         accessToken: 'test-token'
       });
-      
+
       // Need to directly inspect the AxiosHttpClient instance
       // Rather than use a mock, we need to check if the token is correctly passed
-      const axiosClientInstance = (client as unknown as { http: { accessToken?: string } }).http;
+      const axiosClientInstance = (clientWithToken as unknown as { http: { accessToken?: string } }).http;
       expect(axiosClientInstance.accessToken).toBe('test-token');
     });
-    
+
     // Test authorization header with mock axios
     it('should create client with Authorization header when accessToken is provided', () => {
       // We need to spy on axios.create to verify headers
       const axiosSpy = jest.spyOn(axios, 'create');
-      
+
       // Create a client with an access token and immediately use it in a dummy operation
       // to avoid unused variable linting errors
       new Counter({
-        version: 'v2',
         workspace: 'test-workspace',
         accessToken: 'test-token'
       });
-      
+
       // Verify axios.create was called with the correct Authorization header
       expect(axiosSpy).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -266,111 +226,69 @@ describe('Counter', () => {
           })
         })
       );
-      
+
       // Restore original implementation
       axiosSpy.mockRestore();
     });
-    
-    it('should work for both v1 and v2 APIs', () => {
-      // Spy on axios.create
-      const axiosSpy = jest.spyOn(axios, 'create');
-      
-      // Create v1 client with accessToken
-      new Counter({
-        version: 'v1',
-        namespace: 'test-namespace',
-        accessToken: 'v1-token'
-      });
-      
-      // Create v2 client with accessToken
-      new Counter({
-        version: 'v2',
-        workspace: 'test-workspace',
-        accessToken: 'v2-token'
-      });
-      
-      // Get all calls to axios.create
-      const calls = axiosSpy.mock.calls;
-      
-      // Ensure we have at least two calls
-      expect(calls.length).toBeGreaterThanOrEqual(2);
-      
-      // Use a simpler approach - make sure each version has at least one call that setup Authorization
-      let foundV1Auth = false;
-      let foundV2Auth = false;
-      
-      calls.forEach(call => {
-        if (call[0]?.baseURL === 'https://api.counterapi.dev/v1') {
-          const headers = call[0]?.headers as Record<string, string>;
-          if (headers && headers.Authorization === 'Bearer v1-token') {
-            foundV1Auth = true;
-          }
-        }
-        if (call[0]?.baseURL === 'https://api.counterapi.dev/v2') {
-          const headers = call[0]?.headers as Record<string, string>;
-          if (headers && headers.Authorization === 'Bearer v2-token') {
-            foundV2Auth = true;
-          }
-        }
-      });
-      
-      // Assert both conditions are true
-      expect(foundV1Auth).toBe(true);
-      expect(foundV2Auth).toBe(true);
-      
-      // Restore original implementation
-      axiosSpy.mockRestore();
-    });
-    
+
     it('should include accessToken in API requests', async () => {
       // Create a custom mockHttp that captures the config
       mockHttp = new MockHttpClient();
       const capturedConfigs: Record<string, unknown>[] = [];
-      
+
       // Override the get method to capture configs
       mockHttp.get = async <T>(url: string, config?: Record<string, unknown>): Promise<T> => {
         capturedConfigs.push(config || {});
         const key = `GET:${url}`;
         // Use a local variable to hold the response
         let response: unknown;
-        
+
         try {
           // Make the original method call, which will throw if the response doesn't exist
           response = await Object.getPrototypeOf(mockHttp).get.call(mockHttp, url, config);
         } catch {
           throw new Error(`No mock response for ${key}`);
         }
-        
+
         return response as T;
       };
-      
+
       // Create client with access token
       const clientWithToken = new Counter({
-        version: 'v2',
         workspace: 'test-workspace',
         accessToken: 'test-api-key'
       });
-      
+
       // Replace HTTP client with our custom mock
       (clientWithToken as unknown as { http: HttpClient }).http = mockHttp;
-      
+
       // Set up mock response
       const mockResponse: CounterResponse = {
-        value: 42,
-        name: 'test-counter',
-        namespace: 'test-workspace',
-        created: '2023-01-01T00:00:00Z',
-        updated: '2023-01-01T01:00:00Z'
+        code: '200',
+        data: {
+          id: 1,
+          name: 'test-counter',
+          slug: 'test-counter',
+          description: '',
+          team_id: 4,
+          user_id: 7,
+          workspace_id: 1,
+          workspace_slug: 'test-workspace',
+          up_count: 42,
+          down_count: 0,
+          created_at: '2023-01-01T00:00:00Z',
+          updated_at: '2023-01-01T01:00:00Z'
+        }
       };
-      
+
       const getUrl = '/{workspace}/{name}';
       mockHttp.setResponse(`GET:${getUrl.replace('{workspace}', 'test-workspace').replace('{name}', 'test-counter')}`, mockResponse);
-      
+
       // Make API request
       await clientWithToken.get('test-counter');
-      
+
       // In a real implementation with axios, the Authorization header would be sent with the request
       // Our mock can only verify that the client was constructed with the token, which we've already tested
     });
   });
-}); 
+});

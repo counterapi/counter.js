@@ -267,16 +267,14 @@
                 
                 // Update counter value displays
                 if (data) {
-                    // For v2 API responses with up_count and down_count
                     if (data.up_count !== undefined) {
                         upCountElement.textContent = data.up_count;
                     }
-                    
+
                     if (data.down_count !== undefined) {
                         downCountElement.textContent = data.down_count;
                     }
-                    
-                    // For v1 API responses or other formats
+
                     if (data.up_count === undefined && data.down_count === undefined) {
                         if (data.count !== undefined) {
                             upCountElement.textContent = data.count;

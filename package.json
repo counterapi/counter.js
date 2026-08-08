@@ -1,6 +1,6 @@
 {
   "name": "counterapi",
-  "version": "2.1.2",
+  "version": "3.0.0",
   "description": "JavaScript library for CounterAPI (node & browser)",
   "type": "module",
   "main": "dist/counter.js",

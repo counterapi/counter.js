@@ -11,11 +11,10 @@ A minimal "hello world" Node.js application that gets a counter from CounterAPI.
 npm run build
 ```
 
-2. Run the examples:
+2. Run the example:
 
 ```bash
-# For v1 API
 node index.js
 ```
 
-These examples simply get the value of the "test" counter from CounterAPI using either v1 or v2 API. 
+This example simply gets the value of the "test" counter from CounterAPI. 
