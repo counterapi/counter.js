@@ -1,8 +1,6 @@
 name: Release & Publish
 
 on:
-  schedule:
-    - cron: '0 0 * * MON'
   workflow_dispatch:
     inputs:
       version_type:
