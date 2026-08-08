@@ -1,4 +1,16 @@
-# CounterAPI JavaScript Client
+<p align="center">
+  <img src="https://counterapi.dev/img/logo.png" alt="CounterAPI" width="200">
+</p>
+
+<h1 align="center">CounterAPI JavaScript Client</h1>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/counterapi"><img src="https://img.shields.io/npm/v/counterapi.svg" alt="npm version"></a>
+  <a href="https://github.com/counterapi/counter.js/actions/workflows/main.yml"><img src="https://github.com/counterapi/counter.js/actions/workflows/main.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/counterapi"><img src="https://img.shields.io/npm/dm/counterapi.svg" alt="npm downloads"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/counterapi.svg" alt="license"></a>
+  <a href="https://www.npmjs.com/package/counterapi"><img src="https://img.shields.io/badge/types-included-blue.svg" alt="TypeScript types included"></a>
+</p>
 
 A lightweight, universal JavaScript client for [CounterAPI](https://counterapi.dev) - a simple API for tracking and managing counters.
 
